@@ -1,0 +1,71 @@
+# models
+
+Profile
+[
+    {'phone': 'char'},
+    {'img': 'image'},
+    {'rating': }
+]
+
+Subcategories
+[
+    {'title': 'char'},
+    {'postings': 'integer'},
+]
+
+Categories
+[
+    {'title': 'char'},
+    {'postings': 'integer'},
+    {'subcategories': 'manytomany'},
+]
+
+Post
+[
+    {'owner': 'foreignkey'},
+    {'monthprice': 'integer'},
+    {'title': 'char'},
+    {'description': 'text'},
+    {'views': 'integer'},
+    {'created': 'datetime'},
+    {'updated': 'datetime'},
+    {'categories': 'json'},
+]
+
+Transaction
+{
+    {'owner': 'foreignkey'},
+    {'title': 'char'},
+    {'account': 'decimal'},
+    {'account_sts': ['charchoice', (+, -)]},
+    {'status': 'charchoice'},
+    {'success': 'bool'},
+    {'paymentid': 'char'},
+}
+
+Urgent
+[
+    {'owner_post': 'foreignkey'},
+    {'transaction': 'foreignkey'},
+    {'created_time': 'datetime'},
+    {'end_time': 'datetime'},
+    {'is_active': 'bool'},
+]
+
+Top
+[
+    {'owner_post': 'foreignkey'},
+    {'transaction': 'foreignkey'},
+    {'created_time': 'datetime'},
+    {'end_time': 'datetime'},
+    {'is_active': 'bool'},
+]
+
+General
+[
+    {'owner_post': 'foreignkey'},
+    {'transaction': 'foreignkey'},
+    {'created_time': 'datetime'},
+    {'end_time': 'datetime'},
+    {'is_active': 'bool'},
+]
