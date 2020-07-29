@@ -29,7 +29,7 @@ class Post(models.Model):
     description = models.TextField()
     views = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
+    updated = models.DateTimeField()
     category_json = models.TextField(
         default='{"category": null, "subcategory": null}')
 
@@ -92,3 +92,9 @@ class General(models.Model):
     is_active = models.BooleanField(default=True)
     created_time = models.DateTimeField()
     end_time = models.DateTimeField()
+
+
+class Constant(models.Model):
+    key = models.CharField(max_length=255)
+    value = models.TextField()
+    description = models.TextField(blank=True)
