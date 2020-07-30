@@ -1,17 +1,18 @@
 import os
 
 
-try:
-    from .local_settings import *
-except:
-    from .production_settings import *
-
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = '3i7*+&p4wjdfz!&4^mma9y+!i+zsq#^t5p$&8!bmi=qcp4=dqh'
 
 DEBUG = True
+
+
+if DEBUG:
+    from .local_settings import *
+else:
+    from .production_settings import *
+
 
 ALLOWED_HOSTS = []
 
