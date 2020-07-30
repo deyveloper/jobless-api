@@ -6,7 +6,7 @@ import json
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    account = models.DecimalField(default=0, max_digits=5, decimal_places=2)
+    account = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     img = models.ImageField(upload_to='UserImages')
     rating = models.IntegerField(default=0)
 
@@ -50,7 +50,7 @@ class Post(models.Model):
 class Transaction(models.Model):
     owner = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True)
     title = models.CharField(max_length=255)
-    account = models.DecimalField(default=0, max_digits=5, decimal_places=2)
+    account = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     ACC_STS_CHOICE = [
         ('+', 'Ավելացում'),
         ('-', 'Պակասեցում'),
@@ -66,6 +66,7 @@ class Transaction(models.Model):
     success = models.BooleanField(default=False)
     paymentid = models.CharField(max_length=255, blank=True)
     other_data = models.TextField(blank=True)
+    created_time = models.DateTimeField(auto_now_add=True)
 
 class Urgent(models.Model):
     owner_post = models.ForeignKey(Post, on_delete=models.CASCADE)

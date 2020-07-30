@@ -9,10 +9,274 @@ from main.models import *
 
 import json
 import datetime
+import decimal
 
+
+class TopOwner(APIView):
+    def post(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            return resp
+        
+        data = request.data
+
+        try:
+            postid = int(data['postid']) 
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "ԸՆտրեք հայտարարությունը."
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+        
+        try:
+            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը գոյություն չունի․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        if len(curr_post.top_set.filter(is_active=True)) > 0:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը արդեն գտնվում է թոփում․"
+            }})
+
+            return resp
+
+        TOP_PRICE = int(Constant.objects.get(key="TOP_PRICE").value)
+        TOP_DELAY = int(Constant.objects.get(key="TOP_DELAY").value)
+
+        if request.user.profile.account < TOP_PRICE:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Ձեր հաշվին առկա գումարը բավարար չէ թոփ պիտակը գնելու համար․ Լիցքավորեք ձեր հաշիվը․",
+            }})
+
+            return resp
+
+        now = datetime.datetime.now()
+        
+        other_data = {
+            "title": "Top billing",
+            "postid": str(postid),
+            "price": str(TOP_PRICE),
+            "now": str(now),
+        }        
+
+        new_tr = Transaction()
+        new_tr.owner = request.user.profile
+        new_tr.title = "Top"
+        new_tr.account = decimal.Decimal(0) + TOP_PRICE
+        new_tr.acc_sts = '-'
+        new_tr.status = 's'
+        new_tr.success = True
+        new_tr.other_data = json.dumps(other_data)
+        new_tr.save()
+
+        minusUserAccount(request.user, TOP_PRICE)
+       
+        new_top = Top()
+        new_top.owner_post = curr_post
+        new_top.transaction = new_tr
+        new_top.is_active = True
+        new_top.created_time = now
+        new_top.end_time = now + datetime.timedelta(seconds=TOP_DELAY)
+        new_top.save()
+
+        resp = Response({"data": {
+            "status": "success",
+            "message": "Հայտարարությունը հաջողությամբ տեղադրվել է թոփում․"
+        }})
+
+        return resp
+
+class UrgentOwner(APIView):
+    def post(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            return resp
+        
+        data = request.data
+
+        try:
+            postid = int(data['postid']) 
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "ԸՆտրեք հայտարարությունը."
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+        
+        try:
+            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը գոյություն չունի․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        if len(curr_post.urgent_set.filter(is_active=True)) > 0:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը արդեն ստացել է շտապ պիտակը․"
+            }})
+
+            return resp
+
+        URGENT_PRICE = int(Constant.objects.get(key="URGENT_PRICE").value)
+        URGENT_DELAY = int(Constant.objects.get(key="URGENT_DELAY").value)
+
+        if request.user.profile.account < URGENT_PRICE:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Ձեր հաշվին առկա գումարը բավարար չէ շտապ պիտակը գնելու համար․ Լիցքավորեք ձեր հաշիվը․",
+            }})
+
+            return resp
+
+        now = datetime.datetime.now()
+        
+        other_data = {
+            "title": "Urgent billing",
+            "postid": str(postid),
+            "price": str(URGENT_PRICE),
+            "now": str(now),
+        }        
+
+        new_tr = Transaction()
+        new_tr.owner = request.user.profile
+        new_tr.title = "Urgent"
+        new_tr.account = decimal.Decimal(0) + URGENT_PRICE
+        new_tr.acc_sts = '-'
+        new_tr.status = 's'
+        new_tr.success = True
+        new_tr.other_data = json.dumps(other_data)
+        new_tr.save()
+
+        minusUserAccount(request.user, URGENT_PRICE)
+
+        new_urgent = Urgent()
+        new_urgent.owner_post = curr_post
+        new_urgent.transaction = new_tr
+        new_urgent.is_active = True
+        new_urgent.created_time = now
+        new_urgent.end_time = now + datetime.timedelta(seconds=URGENT_DELAY)
+        new_urgent.save()
+
+        resp = Response({"data": {
+            "status": "success",
+            "message": "Հայտարարությունը հաջողությամբ ստացել է շտապ պիտակը․"
+        }})
+
+        return resp
+
+
+class GeneralOwner(APIView):
+    def post(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            return resp
+        
+        data = request.data
+
+        try:
+            postid = int(data['postid']) 
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "ԸՆտրեք հայտարարությունը."
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+        
+        try:
+            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը գոյություն չունի․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        if len(curr_post.general_set.filter(is_active=True)) > 0:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը արդեն գտնվում է գլխավոր էջում․"
+            }})
+
+            return resp
+
+        GENERAL_PRICE = int(Constant.objects.get(key="GENERAL_PRICE").value)
+        GENERAL_DELAY = int(Constant.objects.get(key="GENERAL_DELAY").value)
+
+        if request.user.profile.account < GENERAL_PRICE:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Ձեր հաշվին առկա գումարը բավարար չէ գլխավոր էջ պիտակը գնելու համար․ Լիցքավորեք ձեր հաշիվը․",
+            }})
+
+            return resp
+
+        now = datetime.datetime.now()
+        
+        other_data = {
+            "title": "General billing",
+            "postid": str(postid),
+            "price": str(GENERAL_PRICE),
+            "now": str(now),
+        }        
+
+        new_tr = Transaction()
+        new_tr.owner = request.user.profile
+        new_tr.title = "General"
+        new_tr.account = decimal.Decimal(0) + GENERAL_PRICE
+        new_tr.acc_sts = '-'
+        new_tr.status = 's'
+        new_tr.success = True
+        new_tr.other_data = json.dumps(other_data)
+        new_tr.save()
+
+        minusUserAccount(request.user, GENERAL_PRICE)
+       
+        new_general = General()
+        new_general.owner_post = curr_post
+        new_general.transaction = new_tr
+        new_general.is_active = True
+        new_general.created_time = now
+        new_general.end_time = now + datetime.timedelta(seconds=GENERAL_DELAY)
+        new_general.save()
+
+        resp = Response({"data": {
+            "status": "success",
+            "message": "Հայտարարությունը հաջողությամբ տեղադրվել է գլխավոր էջում․"
+        }})
+
+        return resp
 
 class PostOwner(APIView):
-    def getActionData(self, post):
+    @staticmethod
+    def getActionData(post):
         if len(post.top_set.filter(is_active=True)) > 0:
             curr = post.top_set.filter(is_active=True)[0]
             top = {
@@ -447,3 +711,8 @@ class PostOwner(APIView):
 
 def checkOnAuth(user):
     return user.is_authenticated
+
+def minusUserAccount(user, account):
+    user.profile.account -= decimal.Decimal(account)
+    user.profile.save()
+    user.save()
