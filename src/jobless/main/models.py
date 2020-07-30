@@ -65,7 +65,7 @@ class Transaction(models.Model):
         max_length=1, default='p', choices=STATUS_CHOICE, )
     success = models.BooleanField(default=False)
     paymentid = models.CharField(max_length=255, blank=True)
-
+    other_data = models.TextField(blank=True)
 
 class Urgent(models.Model):
     owner_post = models.ForeignKey(Post, on_delete=models.CASCADE)

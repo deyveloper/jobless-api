@@ -12,6 +12,57 @@ import datetime
 
 
 class PostOwner(APIView):
+    def getActionData(self, post):
+        if len(post.top_set.filter(is_active=True)) > 0:
+            curr = post.top_set.filter(is_active=True)[0]
+            top = {
+                "active": True,
+                "pk": f"{curr.pk}",
+                "created_time": f"{curr.created_time}",
+                "end_time": f"{curr.end_time}",
+            }
+        else:
+            top = {
+                "active": False,
+                "pk": None,
+                "created_time": None,
+                "end_time": None,
+            }
+
+        if len(post.general_set.filter(is_active=True)) > 0:
+            curr = post.general_set.filter(is_active=True)[0]
+            general = {
+                "active": True,
+                "pk": f"{curr.pk}",
+                "created_time": f"{curr.created_time}",
+                "end_time": f"{curr.end_time}",
+            }
+        else:
+            general = {
+                "active": False,
+                "pk": None,
+                "created_time": None,
+                "end_time": None,
+            }
+
+        if len(post.urgent_set.filter(is_active=True)) > 0:
+            curr = post.urgent_set.filter(is_active=True)[0]
+            urgent = {
+                "active": True,
+                "pk": f"{curr.pk}",
+                "created_time": f"{curr.created_time}",
+                "end_time": f"{curr.end_time}",
+            }
+        else:
+            urgent = {
+                "active": False,
+                "pk": None,
+                "created_time": None,
+                "end_time": None,
+            }
+
+        return (top, urgent, general)
+
     def get(self, request):
 
         if not checkOnAuth(request.user):
@@ -42,6 +93,8 @@ class PostOwner(APIView):
 
                 return resp
 
+            top, urgent, general = self.getActionData(post)
+
             dataresp = {
                 'id': f'{postid}',
                 'owner': {
@@ -57,6 +110,9 @@ class PostOwner(APIView):
                     'text': post.category(),
                     'json': f'{post.category_json}',
                 },
+                "top": top,
+                "urgent": urgent,
+                "general": general,
                 'created': f'{post.created}',
                 'updated': f'{post.updated}',
             }
@@ -73,6 +129,8 @@ class PostOwner(APIView):
 
             dataresp = []
             for post in posts:
+                top, urgent, general = self.getActionData(post)
+
                 curr_data = {
                     'id': f'{post.pk}',
                     'owner': {
@@ -88,10 +146,13 @@ class PostOwner(APIView):
                         'text': post.category(),
                         'json': f'{post.category_json}',
                     },
+                    "top": top,
+                    "urgent": urgent,
+                    "general": general,
                     'created': f'{post.created}',
                     'updated': f'{post.updated}',
                 }
-                
+
                 dataresp.append(curr_data)
 
         resp = Response({"data": {
@@ -154,8 +215,6 @@ class PostOwner(APIView):
                 pass
         except:
             pass
-            
-
 
         if curr_subcategory and curr_category and not curr_subcategory in curr_category.subcategories.all():
             resp = Response({"data": {
@@ -164,7 +223,6 @@ class PostOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
 
         categories_formatted = {
             'category': curr_category.pk if curr_category else None,
@@ -222,13 +280,13 @@ class PostOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
+
         if monthprice < 0:
             resp = Response({"data": {
                 "status": "failed",
                 "message": "Աշխատավարձը բացասական չի կարող լինել․"
             }})
-            
+
             return resp
 
         if len(description) < 50:
@@ -252,7 +310,6 @@ class PostOwner(APIView):
         except:
             pass
 
-
         if curr_subcategory and curr_category and not curr_subcategory in curr_category.subcategories.all():
             resp = Response({"data": {
                 "status": "failed",
@@ -260,7 +317,6 @@ class PostOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
 
         categories_formatted = {
             'category': curr_category.pk if curr_category else None,
@@ -269,9 +325,9 @@ class PostOwner(APIView):
 
         categories_json = json.dumps(categories_formatted)
 
-        
         try:
-            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+            curr_post = Post.objects.get(
+                Q(pk=postid) & Q(owner=request.user.profile))
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -286,7 +342,6 @@ class PostOwner(APIView):
         curr_post.categories = categories_json
         curr_post.save()
 
-
         resp = Response({"data": {
             "status": "success",
             "message": "Փոփոխությունները հաջողությամբ պահպանվեցին․"
@@ -294,9 +349,7 @@ class PostOwner(APIView):
 
         return resp
 
-    # Updating
-    def put(self, request):
-        
+    def delete(self, request):
         if not checkOnAuth(request.user):
             resp = Response({"data": {
                 "status": "failed",
@@ -304,22 +357,21 @@ class PostOwner(APIView):
             }}, status=status.HTTP_401_UNAUTHORIZED)
 
             return resp
-        
+
         data = request.data
 
         try:
-            postid = data['postid']    
+            postid = int(data['postid'])
         except:
             resp = Response({"data": {
                 "status": "failed",
-                "message": "Ընտրեք հայտարարությունը․"
-            }})
+                "message": "Ընտրեք հայտարարությունը․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
-        
+
         try:
-            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile)) 
+            post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -327,21 +379,70 @@ class PostOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
-        now = datetime.datetime.now()
-        UPDATING_DELAY = int(Constant.objects(key="UPDATING_DELAY").value)
 
-        if now - curr_post.updated < datetime.timedelta(seconds=UPDATING_DELAY):
+        post.delete()
+
+        resp = Response({"data": {
+            "status": "failed",
+            "message": "Հայտարարությունը հաջողությամբ հեռացվել է․"
+        }})
+
+        return resp
+
+    # Updating
+    def put(self, request):
+
+        if not checkOnAuth(request.user):
             resp = Response({"data": {
                 "status": "failed",
-                "message": "Տվյալ հայտարարությունը դեռևս թարմացման կարիք չունի"
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return resp
+
+        data = request.data
+
+        try:
+            postid = data['postid']
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Ընտրեք հայտարարությունը․"
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        try:
+            curr_post = Post.objects.get(
+                Q(pk=postid) & Q(owner=request.user.profile))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը գոյություն չունի․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        now = datetime.datetime.now()
+        UPDATING_DELAY = int(Constant.objects.get(key="UPDATING_DELAY").value)
+
+        if now - curr_post.updated.replace(tzinfo=None) < datetime.timedelta(seconds=UPDATING_DELAY):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը դեռևս թարմացման կարիք չունի․"
             }})
 
             return resp
-        
-        # imthere
 
+        curr_post.updated = now
+        curr_post.save()
 
+        resp = Response({"data": {
+            "status": "success",
+            "message": "Հայտարարությունը թարմացվել է հաջողությամբ․",
+        }})
+
+        return resp
 
 
 def checkOnAuth(user):
