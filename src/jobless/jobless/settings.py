@@ -7,14 +7,13 @@ SECRET_KEY = '3i7*+&p4wjdfz!&4^mma9y+!i+zsq#^t5p$&8!bmi=qcp4=dqh'
 
 DEBUG = True
 
-
 if DEBUG:
     from .local_settings import *
 else:
     from .production_settings import *
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'main',
@@ -84,12 +83,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Yerevan'
 
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
-
-STATIC_URL = '/static/'

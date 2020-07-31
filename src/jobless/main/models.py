@@ -7,7 +7,7 @@ import json
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     account = models.DecimalField(default=0, max_digits=20, decimal_places=2)
-    img = models.ImageField(upload_to='UserImages')
+    img = models.ImageField(upload_to='UserImages/', default="default.png")
     rating = models.IntegerField(default=0)
 
 

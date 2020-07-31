@@ -12,6 +12,42 @@ import datetime
 import decimal
 
 
+class Owner(APIView):
+    def get(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            return resp
+        
+        data = request.data
+
+        user = request.user
+        curr_user = {
+            "id": user.pk,
+            "profile_id": user.profile.pk,
+            "info": {
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "img_url": user.profile.img.url,
+            },
+            "rating": str(user.profile.rating),
+            "account": str(user.profile.account),
+            "date_joined": str(user.date_joined),
+        }
+        
+        resp = Response({"data": {
+            "status": "success",
+            "user_info": curr_user,
+        }})
+
+        return resp
+
+
 class TopOwner(APIView):
     def post(self, request):
         if not checkOnAuth(request.user):
@@ -98,6 +134,7 @@ class TopOwner(APIView):
         }})
 
         return resp
+
 
 class UrgentOwner(APIView):
     def post(self, request):
