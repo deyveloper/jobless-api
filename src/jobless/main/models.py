@@ -26,6 +26,14 @@ class Post(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField()
 
+    def is_top(self, ):
+        return len(self.top_set.filter(is_active=True)) > 0
+
+    def is_urgent(self, ):
+        return len(self.urgent_set.filter(is_active=True)) > 0
+    
+    def is_general(self, ):
+        return len(self.general_set.filter(is_active=True)) > 0
 
 class Transaction(models.Model):
     owner = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True)

@@ -412,10 +412,7 @@ class PostOwner(APIView):
                 'description': f'{post.description}',
                 'monthprice': f'{post.monthprice}',
                 'views': f'{post.views}',
-                'category': {
-                    'id': post.category.pk,
-                    'title': post.category.title,
-                },
+                'category': getCategoryJson(post.category),
                 "top": top,
                 "urgent": urgent,
                 "general": general,
@@ -431,7 +428,8 @@ class PostOwner(APIView):
 
             return resp
         else:
-            posts = Post.objects.filter(owner=request.user.profile)
+            posts = Post.objects.filter(
+                owner=request.user.profile).order_by('-created')
 
             dataresp = []
             for post in posts:
@@ -448,10 +446,7 @@ class PostOwner(APIView):
                     'description': f'{post.description}',
                     'monthprice': f'{post.monthprice}',
                     'views': f'{post.views}',
-                    'category': {
-                        'id': post.category.pk,
-                        'title': post.category.title,
-                    },
+                    'category': getCategoryJson(post.category),
                     "top": top,
                     "urgent": urgent,
                     "general": general,
@@ -742,7 +737,6 @@ class OtherUser(APIView):
         except:
             pass
 
-
         try:
             userid = data['userid']
         except:
@@ -772,9 +766,9 @@ class OtherUser(APIView):
 
             for post in allposts_qs:
                 curr_post = getOtherPostJson(post)
-                
+
                 allposts_json.append(curr_post)
-            
+
             user_json['posts'] = allposts_json
 
         resp = Response({"data": {
@@ -822,13 +816,13 @@ class OtherPost(APIView):
 
         resp = Response({"data": {
             "status": "success",
-            "post_info": post_json, 
+            "post_info": post_json,
         }})
 
         return resp
 
 
-class RandomG(APIView):
+class GeneralRandom(APIView):
     def get(self, request):
         if not checkOnAuth(request.user):
             resp = Response({"data": {
@@ -837,10 +831,10 @@ class RandomG(APIView):
             }}, status=status.HTTP_401_UNAUTHORIZED)
 
             return resp
-        
+
         posts_count_arr = [5, 10, 15, 20]
         cats_count = 2
-        cats_count_reserve = cats_count 
+        cats_count_reserve = cats_count
 
         categories = Category.objects.all()
 
@@ -852,22 +846,193 @@ class RandomG(APIView):
 
             if curr_cat.pk in categories_pk:
                 continue
-            
-            categories_pk.append(curr_cat.pk)
-            categories_arr.append({'category': curr_cat, 'posts_count': random.choice(posts_count_arr)})
-            cats_count -= 1
 
+            categories_pk.append(curr_cat.pk)
+            categories_arr.append(
+                {'category': curr_cat, 'posts_count': random.choice(posts_count_arr)})
+            cats_count -= 1
 
         dataresp = []
         for category_dict in categories_arr:
-            curr_cat_posts = category_dict['category'].post_set.all()
-            counting = category_dict['posts_count']
-            
-            while posts_count != 0:
-                # imthere
-                pass
-        
+            curr_cat_posts_not_filtered = category_dict['category'].post_set.all(
+            )
+            curr_cat_posts = []
 
+            for cr_post in curr_cat_posts_not_filtered:
+                if not cr_post.is_general():
+                    continue
+
+                curr_cat_posts.append(cr_post)
+
+            curr_cat_json = getCategoryJson(category_dict['category'])
+            counting = category_dict['posts_count']
+
+            posts_pk = []
+            posts_json_arr = []
+
+            while counting != 0 and len(curr_cat_posts) - len(posts_pk) != 0 and category_dict['posts_count'] - counting < len(curr_cat_posts) - len(posts_pk):
+
+                curr_post = random.choice(curr_cat_posts)
+
+                if curr_post.pk in posts_pk:
+                    continue
+
+                curr_post_json = getOtherPostJson(curr_post)
+
+                posts_json_arr.append(curr_post_json)
+
+                counting -= 1
+
+            post_category = {
+                'category': curr_cat_json,
+                'posts': posts_json_arr,
+            }
+
+            dataresp.append(post_category)
+
+        resp = Response({"data": {
+            "status": "success",
+            "message": "Հաջող․",
+            "general_info": dataresp
+        }})
+
+        return resp
+
+
+class SimpleSearch(APIView):
+    def get(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return resp
+
+        top_counts = [1, 2, 3, 4, 5]
+
+        data = request.GET
+
+        query = data.get('q')
+        if not query:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Մուտքագրեք բանալի բառը/բառերը որոնելու համար."
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        posts = Post.objects.filter(Q(category__title__icontains=query) | Q(
+            category__naming__icontains=query) | Q(title__icontains=query) | Q(description__icontains=query))
+
+        if len(posts) == 0:
+            resp = Response({"data": {
+                "status": "success",
+                "message": "Ձեր նշած բանալի բառերով հայտարարություն չի գտնվել․"
+            }}, status=status.HTTP_204_NO_CONTENT)
+
+            return resp
+
+        min_monthprice = data.get('min_monthprice')
+        max_monthprice = data.get('max_monthprice')
+
+        if min_monthprice:
+            posts = posts.filter(Q(monthprice__gte=int(min_monthprice)))
+
+        if max_monthprice:
+            posts = posts.filter(Q(monthprice__lte=int(max_monthprice)))
+
+        categoryid = data.get('categoryid')
+        try:
+            category = Category.objects.get(pk=categoryid)
+        except:
+            category = None
+
+        if category:
+            posts = posts.filter(Q(category=category))
+
+        if len(posts) == 0:
+            resp = Response({"data": {
+                "status": "success",
+                "message": "Ձեր նշած բանալի բառերով հայտարարություն չի գտնվել․"
+            }}, status=status.HTTP_204_NO_CONTENT)
+
+            return resp
+
+        posts = posts.order_by('-updated')
+
+        all_top_posts = []
+        posts_json = []
+        for post in posts:
+            curr_post_json = getOtherPostJson(post)
+            if post.is_top():
+                all_top_posts.append(post)
+
+            posts_json.append(curr_post_json)
+
+        filtered_posts = getRandomTops(
+            all_top_posts, random.choice(top_counts))
+        filtered_posts_json = []
+
+        for post in filtered_posts:
+            filtered_posts_json.append(getOtherPostJson(post))
+
+        resp = Response({"data": {
+            "status": "success",
+            "results": {
+                "posts": posts_json,
+                "top_posts": filtered_posts_json,
+            }}})
+
+        return resp
+
+
+class CategoryPosts(APIView):
+    def get(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return resp
+
+        data = request.GET
+
+        try:
+            categoryid = int(data['categoryid'])
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Նշեք կատեգորիան․"
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        try:
+            category = Category.objects.get(Q(pk=categoryid))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ կատեգորիան գոյոթյուն չունի․"
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        posts = Post.objects.filter(Q(category=category)).order_by('-updated')
+
+        posts_json = []
+        for post in posts:
+            curr_post_json = getOtherPostJson(post)
+            posts_json.append(curr_post_json)
+
+        resp = Response({"data": {
+            "status": "success",
+            "category_id": category.pk,
+            "category_posts": posts_json,
+        }})
+
+        return resp
 
 
 def checkOnAuth(user):
@@ -878,6 +1043,42 @@ def minusUserAccount(user, account):
     user.profile.account -= decimal.Decimal(account)
     user.profile.save()
     user.save()
+
+
+def getRandomTops(posts, top_counts, all_tops=True):
+    if not all_tops:
+        all_top_posts = []
+        for post in posts:
+            if post.is_top():
+                all_top_posts.append(post)
+        posts = all_top_posts
+
+    posts_pk = []
+    counting = top_counts
+    selected_posts = []
+
+    while counting != 0 and len(posts) - len(posts_pk) != 0 and top_counts - counting < len(posts) - len(posts_pk):
+        curr_post = random.choice(posts)
+
+        if curr_post.pk in posts_pk:
+            continue
+
+        posts_pk.append(curr_post.pk)
+        selected_posts.append(curr_post)
+
+        counting -= 1
+
+    return selected_posts
+
+
+def getCategoryJson(category):
+    cat_json = {
+        'pk': category.pk,
+        'title': category.title,
+        'naming': category.naming,
+    }
+
+    return cat_json
 
 
 def getOtherUserJson(curr_user):
@@ -903,24 +1104,23 @@ def getOtherPostJson(post):
     top, urgent, general = PostOwner.getActionData(post)
 
     post_json = {
-        'id': f'{post.pk}',
+        'id': post.pk,
         'owner': {
+            'id': post.owner.pk,
             'username': f'{post.owner.user.username}',
             'first_name': f'{post.owner.user.first_name}',
             'last_name': f'{post.owner.user.last_name}',
+            'rating': post.owner.rating,
         },
         'title': f'{post.title}',
         'description': f'{post.description}',
         'monthprice': f'{post.monthprice}',
-        'category': {
-            'id': post.category.pk,
-            'title': post.category.title,
-        },
+        'category': getCategoryJson(post.category),
         "top": top,
         "urgent": urgent,
         "general": general,
         'created': f'{post.created}',
         'updated': f'{post.updated}',
     }
-    
+
     return post_json

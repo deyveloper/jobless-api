@@ -11,4 +11,9 @@ urlpatterns = [
 
     path('users/user/', OtherUser.as_view(), name="otheruser"),
     path('users/user/post/', OtherPost.as_view(), name="otherpost"),
+
+    path('random/general/', GeneralRandom.as_view(), name="randomgeneral"),
+
+    path('posts/search/', SimpleSearch.as_view(), name="simplesearch"),
+    path('posts/category/', CategoryPosts.as_view(), name="postscategory"),
 ]
