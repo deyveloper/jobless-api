@@ -11,40 +11,20 @@ class Profile(models.Model):
     rating = models.IntegerField(default=0)
 
 
-class Subcategory(models.Model):
-    title = models.CharField(max_length=255)
-    postings = models.IntegerField(default=0)
-
-
 class Category(models.Model):
     title = models.CharField(max_length=255)
-    postings = models.IntegerField(default=0)
-    subcategories = models.ManyToManyField(Subcategory, blank=True)
+    naming = models.CharField(max_length=255)
 
 
 class Post(models.Model):
     owner = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     monthprice = models.IntegerField()
     title = models.CharField(max_length=255)
     description = models.TextField()
     views = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField()
-    category_json = models.TextField(
-        default='{"category": null, "subcategory": null}')
-
-    def category(self):
-        categoriesjson = json.loads(self.category_json)
-
-        try:
-            category = str(Category.objects.get(pk=int(categoriesjson['category'])
-                                                ).title)
-            subcategory = str(Subcategory.objects.get(
-                pk=int(categoriesjson['subcategory'])).title)
-
-            return f'{category}, {subcategory}'
-        except:
-            return str('Այլ, այլ')
 
 
 class Transaction(models.Model):

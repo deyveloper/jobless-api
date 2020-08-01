@@ -8,4 +8,7 @@ urlpatterns = [
     path('my/top/', TopOwner.as_view(), name="topowner"),
     path('my/urgent/', UrgentOwner.as_view(), name="urgentowner"),
     path('my/general/', GeneralOwner.as_view(), name="generalowner"),
+
+    path('users/user/', OtherUser.as_view(), name="otheruser"),
+    path('users/user/post/', OtherPost.as_view(), name="otherpost"),
 ]

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from main.models import *
 
+import random
 import json
 import datetime
 import decimal
@@ -19,9 +20,9 @@ class Owner(APIView):
                 "status": "failed",
                 "message": "Չգրանցված."
             }}, status=status.HTTP_401_UNAUTHORIZED)
-            
+
             return resp
-        
+
         data = request.data
 
         user = request.user
@@ -35,11 +36,11 @@ class Owner(APIView):
                 "email": user.email,
                 "img_url": user.profile.img.url,
             },
-            "rating": str(user.profile.rating),
+            "rating": user.profile.rating,
             "account": str(user.profile.account),
             "date_joined": str(user.date_joined),
         }
-        
+
         resp = Response({"data": {
             "status": "success",
             "user_info": curr_user,
@@ -55,13 +56,13 @@ class TopOwner(APIView):
                 "status": "failed",
                 "message": "Չգրանցված."
             }}, status=status.HTTP_401_UNAUTHORIZED)
-            
+
             return resp
-        
+
         data = request.data
 
         try:
-            postid = int(data['postid']) 
+            postid = int(data['postid'])
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -69,9 +70,10 @@ class TopOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
+
         try:
-            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+            curr_post = Post.objects.get(
+                Q(pk=postid) & Q(owner=request.user.profile))
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -100,13 +102,13 @@ class TopOwner(APIView):
             return resp
 
         now = datetime.datetime.now()
-        
+
         other_data = {
             "title": "Top billing",
             "postid": str(postid),
             "price": str(TOP_PRICE),
             "now": str(now),
-        }        
+        }
 
         new_tr = Transaction()
         new_tr.owner = request.user.profile
@@ -119,7 +121,7 @@ class TopOwner(APIView):
         new_tr.save()
 
         minusUserAccount(request.user, TOP_PRICE)
-       
+
         new_top = Top()
         new_top.owner_post = curr_post
         new_top.transaction = new_tr
@@ -143,13 +145,13 @@ class UrgentOwner(APIView):
                 "status": "failed",
                 "message": "Չգրանցված."
             }}, status=status.HTTP_401_UNAUTHORIZED)
-            
+
             return resp
-        
+
         data = request.data
 
         try:
-            postid = int(data['postid']) 
+            postid = int(data['postid'])
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -157,9 +159,10 @@ class UrgentOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
+
         try:
-            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+            curr_post = Post.objects.get(
+                Q(pk=postid) & Q(owner=request.user.profile))
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -188,13 +191,13 @@ class UrgentOwner(APIView):
             return resp
 
         now = datetime.datetime.now()
-        
+
         other_data = {
             "title": "Urgent billing",
             "postid": str(postid),
             "price": str(URGENT_PRICE),
             "now": str(now),
-        }        
+        }
 
         new_tr = Transaction()
         new_tr.owner = request.user.profile
@@ -231,13 +234,13 @@ class GeneralOwner(APIView):
                 "status": "failed",
                 "message": "Չգրանցված."
             }}, status=status.HTTP_401_UNAUTHORIZED)
-            
+
             return resp
-        
+
         data = request.data
 
         try:
-            postid = int(data['postid']) 
+            postid = int(data['postid'])
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -245,9 +248,10 @@ class GeneralOwner(APIView):
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-        
+
         try:
-            curr_post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+            curr_post = Post.objects.get(
+                Q(pk=postid) & Q(owner=request.user.profile))
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -276,13 +280,13 @@ class GeneralOwner(APIView):
             return resp
 
         now = datetime.datetime.now()
-        
+
         other_data = {
             "title": "General billing",
             "postid": str(postid),
             "price": str(GENERAL_PRICE),
             "now": str(now),
-        }        
+        }
 
         new_tr = Transaction()
         new_tr.owner = request.user.profile
@@ -295,7 +299,7 @@ class GeneralOwner(APIView):
         new_tr.save()
 
         minusUserAccount(request.user, GENERAL_PRICE)
-       
+
         new_general = General()
         new_general.owner_post = curr_post
         new_general.transaction = new_tr
@@ -310,6 +314,7 @@ class GeneralOwner(APIView):
         }})
 
         return resp
+
 
 class PostOwner(APIView):
     @staticmethod
@@ -407,9 +412,9 @@ class PostOwner(APIView):
                 'description': f'{post.description}',
                 'monthprice': f'{post.monthprice}',
                 'views': f'{post.views}',
-                'categories': {
-                    'text': post.category(),
-                    'json': f'{post.category_json}',
+                'category': {
+                    'id': post.category.pk,
+                    'title': post.category.title,
                 },
                 "top": top,
                 "urgent": urgent,
@@ -443,9 +448,9 @@ class PostOwner(APIView):
                     'description': f'{post.description}',
                     'monthprice': f'{post.monthprice}',
                     'views': f'{post.views}',
-                    'categories': {
-                        'text': post.category(),
-                        'json': f'{post.category_json}',
+                    'category': {
+                        'id': post.category.pk,
+                        'title': post.category.title,
                     },
                     "top": top,
                     "urgent": urgent,
@@ -480,19 +485,27 @@ class PostOwner(APIView):
             owner = request.user.profile
 
             try:
-                monthprice = data['monthprice']
+                monthprice = int(data['monthprice'])
             except:
                 monthprice = 0
 
             title = data['title']
             description = data['description']
-            categories = data['categories']
+            categoryid = data['categoryid']
 
         except:
             resp = Response({"data": {
                 "status": "failed",
                 "message": "Լրացրեք բոլոր պահանջվող տվյալները․",
             }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        if monthprice < 0:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Աշխատավարձը բացասական չի կարող լինել․"
+            }})
 
             return resp
 
@@ -504,40 +517,22 @@ class PostOwner(APIView):
 
             return resp
 
-        curr_subcategory = None
-        curr_category = None
-
         try:
-            curr_category = Category.objects.get(pk=categories['category'])
-            try:
-                curr_subcategory = Subcategory.objects.get(
-                    pk=categories['subcategory'])
-            except:
-                pass
+            curr_category = Category.objects.get(pk=categoryid)
         except:
-            pass
-
-        if curr_subcategory and curr_category and not curr_subcategory in curr_category.subcategories.all():
             resp = Response({"data": {
                 "status": "failed",
-                "message": "Սխալ կատեգորիաներ․",
+                "message": "Սխալ կատեգորիա․"
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-
-        categories_formatted = {
-            'category': curr_category.pk if curr_category else None,
-            'subcategory': curr_subcategory.pk if curr_subcategory else None,
-        }
-
-        categories_json = json.dumps(categories_formatted)
 
         new_post = Post()
         new_post.owner = request.user.profile
         new_post.monthprice = monthprice
         new_post.title = title
         new_post.description = description
-        new_post.category_json = categories_json
+        new_post.category = curr_category
         new_post.updated = datetime.datetime.now()
         new_post.save()
 
@@ -573,7 +568,7 @@ class PostOwner(APIView):
             title = data['title']
             description = data['description']
             monthprice = int(data['monthprice'])
-            categories = data['categories']
+            categoryid = int(data['categoryid'])
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -598,33 +593,15 @@ class PostOwner(APIView):
 
             return resp
 
-        curr_subcategory = None
-        curr_category = None
-
         try:
-            curr_category = Category.objects.get(pk=categories['category'])
-            try:
-                curr_subcategory = Subcategory.objects.get(
-                    pk=categories['subcategory'])
-            except:
-                pass
+            curr_category = Category.objects.get(pk=categoryid)
         except:
-            pass
-
-        if curr_subcategory and curr_category and not curr_subcategory in curr_category.subcategories.all():
             resp = Response({"data": {
                 "status": "failed",
-                "message": "Սխալ կատեգորիաներ․",
+                "message": "Սխալ կատեգորիա․",
             }}, status=status.HTTP_400_BAD_REQUEST)
 
             return resp
-
-        categories_formatted = {
-            'category': curr_category.pk if curr_category else None,
-            'subcategory': curr_subcategory.pk if curr_subcategory else None,
-        }
-
-        categories_json = json.dumps(categories_formatted)
 
         try:
             curr_post = Post.objects.get(
@@ -640,7 +617,7 @@ class PostOwner(APIView):
         curr_post.title = title
         curr_post.description = description
         curr_post.monthprice = monthprice
-        curr_post.categories = categories_json
+        curr_post.category = curr_category
         curr_post.save()
 
         resp = Response({"data": {
@@ -672,7 +649,8 @@ class PostOwner(APIView):
             return resp
 
         try:
-            post = Post.objects.get(Q(pk=postid) & Q(owner=request.user.profile))
+            post = Post.objects.get(
+                Q(pk=postid) & Q(owner=request.user.profile))
         except:
             resp = Response({"data": {
                 "status": "failed",
@@ -746,10 +724,203 @@ class PostOwner(APIView):
         return resp
 
 
+class OtherUser(APIView):
+    def get(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return resp
+
+        data = request.GET
+
+        allposts = False
+        try:
+            allposts = "true" == data['allposts'].lower()
+        except:
+            pass
+
+
+        try:
+            userid = data['userid']
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Նշեք օգտատիրոջը․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        try:
+            curr_user = User.objects.get(Q(pk=userid) & Q(is_active=True))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ օգտատերը գոյություն չունի․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        user_json = getOtherUserJson(curr_user)
+
+        if allposts:
+            allposts_qs = curr_user.profile.post_set.all()
+
+            allposts_json = []
+
+            for post in allposts_qs:
+                curr_post = getOtherPostJson(post)
+                
+                allposts_json.append(curr_post)
+            
+            user_json['posts'] = allposts_json
+
+        resp = Response({"data": {
+            "status": "success",
+            "user_info": user_json
+        }})
+
+        return resp
+
+
+class OtherPost(APIView):
+    def get(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return resp
+
+        data = request.GET
+
+        try:
+            postid = data['postid']
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Նշեք հայտարարությունը․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        try:
+            curr_post = Post.objects.get(
+                Q(pk=postid) & Q(owner__user__is_active=True))
+        except:
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Տվյալ հայտարարությունը գոյություն չունի․",
+            }}, status=status.HTTP_400_BAD_REQUEST)
+
+            return resp
+
+        post_json = getOtherPostJson(curr_post)
+
+        resp = Response({"data": {
+            "status": "success",
+            "post_info": post_json, 
+        }})
+
+        return resp
+
+
+class RandomG(APIView):
+    def get(self, request):
+        if not checkOnAuth(request.user):
+            resp = Response({"data": {
+                "status": "failed",
+                "message": "Չգրանցված."
+            }}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return resp
+        
+        posts_count_arr = [5, 10, 15, 20]
+        cats_count = 2
+        cats_count_reserve = cats_count 
+
+        categories = Category.objects.all()
+
+        categories_pk = []
+        categories_arr = []
+
+        while cats_count != 0:
+            curr_cat = random.choice(categories)
+
+            if curr_cat.pk in categories_pk:
+                continue
+            
+            categories_pk.append(curr_cat.pk)
+            categories_arr.append({'category': curr_cat, 'posts_count': random.choice(posts_count_arr)})
+            cats_count -= 1
+
+
+        dataresp = []
+        for category_dict in categories_arr:
+            curr_cat_posts = category_dict['category'].post_set.all()
+            counting = category_dict['posts_count']
+            
+            while posts_count != 0:
+                # imthere
+                pass
+        
+
+
+
 def checkOnAuth(user):
     return user.is_authenticated
+
 
 def minusUserAccount(user, account):
     user.profile.account -= decimal.Decimal(account)
     user.profile.save()
     user.save()
+
+
+def getOtherUserJson(curr_user):
+    user_json = {
+        "id": curr_user.pk,
+        "profile_id": curr_user.profile.pk,
+        "info": {
+            "username": curr_user.username,
+            "first_name": curr_user.first_name,
+            "last_name": curr_user.last_name,
+            "email": curr_user.email,
+            "img_url": curr_user.profile.img.url,
+        },
+        "posts_count": len(curr_user.profile.post_set.all()),
+        "rating": curr_user.profile.rating,
+        "date_joined": str(curr_user.date_joined),
+    }
+
+    return user_json
+
+
+def getOtherPostJson(post):
+    top, urgent, general = PostOwner.getActionData(post)
+
+    post_json = {
+        'id': f'{post.pk}',
+        'owner': {
+            'username': f'{post.owner.user.username}',
+            'first_name': f'{post.owner.user.first_name}',
+            'last_name': f'{post.owner.user.last_name}',
+        },
+        'title': f'{post.title}',
+        'description': f'{post.description}',
+        'monthprice': f'{post.monthprice}',
+        'category': {
+            'id': post.category.pk,
+            'title': post.category.title,
+        },
+        "top": top,
+        "urgent": urgent,
+        "general": general,
+        'created': f'{post.created}',
+        'updated': f'{post.updated}',
+    }
+    
+    return post_json
