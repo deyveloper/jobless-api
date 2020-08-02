@@ -370,7 +370,6 @@ class PostOwner(APIView):
         return (top, urgent, general)
 
     def get(self, request):
-
         if not checkOnAuth(request.user):
             resp = Response({"data": {
                 "status": "failed",
@@ -465,7 +464,6 @@ class PostOwner(APIView):
         return resp
 
     def post(self, request):
-
         if not checkOnAuth(request.user):
             resp = Response({"data": {
                 "status": "failed",
